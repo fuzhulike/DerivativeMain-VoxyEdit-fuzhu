@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "excludeLodsFromVanillaDepth": false,
+  "opaqueDrawBuffers": [6, 7, 3],
+  "translucentDrawBuffers": [7, 2, 3],
+  "uniforms": [
+    "frameCounter",
+    "viewWidth",
+    "viewHeight",
+    "vxModelView",
+    "vxModelViewInv",
+    "vxProj",
+    "vxProjInv"
+  ]
+}
