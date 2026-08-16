@@ -16,9 +16,22 @@ mat4 gbufferModelViewInverse = vxModelViewInv;
 mat4 gbufferProjection = vxProj;
 mat4 gbufferProjectionInverse = vxProjInv;
 
+vec3 ScreenToViewSpace(vec3 screenPos) {
+    vec4 ndc = vec4(screenPos.xy * 2.0 - 1.0, screenPos.z * 2.0 - 1.0, 1.0);
+    vec4 viewPos = vxProjInv * ndc;
+    return viewPos.xyz / viewPos.w;
+}
+
 void voxy_emitFragment(VoxyFragmentParameters p) {
     vec4 albedo = p.sampledColour * p.tinting;
     if (albedo.a < 0.01) return;
+
+    uint blockID = p.customId / 100u;
+    float water = float(blockID == 200u || blockID == 204u);
+    float glass = float(blockID == 201u);
+    float ice   = float(blockID == 202u);
+
+    vec2 lightmap = clamp((p.lightMap - 0.03125) * 1.06667, vec2(0.0), vec2(0.9333, 1.0));
 
     vec3 normal = vec3(0.0);
     switch (uint(p.face) >> 1u) {
@@ -28,11 +41,32 @@ void voxy_emitFragment(VoxyFragmentParameters p) {
     }
     if ((p.face & 1u) == 0u) normal = -normal;
 
-    vec4 specularData = vec4(0.0);
+    int materialID = 16;
+    if (water > 0.5) {
+        materialID = 17;
+        albedo.rgb = mix(albedo.rgb, vec3(0.05, 0.7, 1.0) * 0.3, 0.8);
+    } else if (ice > 0.5) {
+        materialID = 18;
+    } else if (glass > 0.5) {
+        materialID = 16;
+    }
 
-    colortex7Out = albedo.rgb;
-    reflectionData = vec4(0.0, 0.0, 0.0, 1.0);
+    float fresnel = 0.0;
+    if (water > 0.5) {
+        vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
+        vec3 viewPos = ScreenToViewSpace(screenPos);
+        float NdotV = abs(dot(normal, normalize(viewPos)));
+        fresnel = pow(1.0 - NdotV, 5.0);
+        fresnel = fresnel * 0.98 + 0.02;
+    }
+
+    colortex7Out.xy = lightmap;
+    colortex7Out.z = float(materialID + 0.1) / 255.0;
+
     colortex3Out.xy = EncodeNormal(normal);
-    colortex3Out.z = PackUnorm2x8(specularData.rg);
-    colortex3Out.w = PackUnorm2x8(specularData.ba);
+    colortex3Out.z = PackUnorm2x8(albedo.rg);
+    colortex3Out.w = PackUnorm2x8(albedo.ba);
+
+    vec3 waterColor = vec3(0.05, 0.7, 1.0) * 0.3;
+    reflectionData = vec4(waterColor * fresnel, 1.0 - fresnel);
 }
