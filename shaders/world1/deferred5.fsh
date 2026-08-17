@@ -247,8 +247,8 @@ void main() {
 		worldPos += gbufferModelViewInverse[3].xyz;
 
 		float distortFactor;
-		// vec3 normalOffset = worldNormal * min(0.25, dotSelf(worldPos) * 6e-5 + 3e-2) * (2.0 - saturate(NdotL));
-		vec3 normalOffset = worldNormal * (dotSelf(worldPos) * 8e-5 + 3e-2) * (2.0 - saturate(NdotL));
+		float distScale = min(dotSelf(worldPos) * 8e-5, 2.0);
+		vec3 normalOffset = worldNormal * (distScale + 3e-2) * (2.0 - saturate(NdotL));
 
 		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);	
 
@@ -274,7 +274,7 @@ void main() {
 		vec3 specular = vec3(0.0);
 		if (NdotL > 1e-3) {
 			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-			shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale);
+			shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale, NdotL);
 
 			if (maxOf(shadow) > 1e-6) {
 				#ifdef SCREEN_SPACE_SHADOWS

@@ -248,7 +248,8 @@ void main() {
 		#endif
 
 		float distortFactor;
-		vec3 normalOffset = worldNormal * (dotSelf(worldPos) * 8e-5 + 3e-2) * (2.0 - saturate(NdotL));
+		float distScale = min(dotSelf(worldPos) * 8e-5, 2.0);
+		vec3 normalOffset = worldNormal * (distScale + 3e-2) * (2.0 - saturate(NdotL));
 
 		vec3 shadowProjPos = WorldPosToShadowProjPosBias(worldPos + normalOffset, distortFactor);	
 
@@ -275,7 +276,7 @@ void main() {
 		vec3 specular = vec3(0.0);
 		if (NdotL > 1e-3) {
 			float penumbraScale = max(blockerSearch.x / distortFactor, 2.0 / realShadowMapRes);
-			if (distanceFade < 1.0) shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale);
+			if (distanceFade < 1.0) shadow = PercentageCloserFilter(shadowProjPos, dither, penumbraScale, NdotL);
 			shadow = mix(shadow, vec3(1.0), distanceFade);
 
 			if (maxOf(shadow) > 1e-6) {

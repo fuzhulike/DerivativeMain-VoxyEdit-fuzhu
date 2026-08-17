@@ -53,8 +53,9 @@ vec2 BlockerSearch(in vec3 shadowProjPos, in float dither) {
 	return vec2(searchDepth * shadowProjection[0].x, sssDepth * shadowProjectionInverse[2].z);
 }
 
-vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float penumbraScale) {
-	shadowProjPos.z -= 1e-4 - dither * 5e-5;
+vec3 PercentageCloserFilter(in vec3 shadowProjPos, in float dither, in float penumbraScale, in float NdotL) {
+	float slopeBias = (1.0 - saturate(NdotL)) * 2e-4;
+	shadowProjPos.z -= 1e-4 - dither * 5e-5 + slopeBias;
 
 	// const uint steps = 16u;
 	const float rSteps = 1.0 / float(PCF_SAMPLES);
